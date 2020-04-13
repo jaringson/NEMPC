@@ -5,8 +5,9 @@ import matplotlib.pyplot as plt
 from time import time
 
 cost_fn = CostFunctor(use_penalty=False)
-ctrl = NEMPC(cost_fn, 9, 4, cost_fn.u_min, cost_fn.u_max, horizon=10,
-        population_size=500, num_parents=10, num_gens=100)
+u_eq = np.array([0.5,0,0,0])
+ctrl = NEMPC(cost_fn, 9, 4, cost_fn.u_min, cost_fn.u_max, u_eq, horizon=10,
+        population_size=500, num_parents=10, num_gens=100, mode='tournament')
 
 x_des = np.array([0,1,-5.0,0,0,0,0,0,0])
 

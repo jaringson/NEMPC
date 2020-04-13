@@ -1,6 +1,7 @@
 import numpy as np
 
 from IPython.core.debugger import set_trace
+
 def lhssample(n,p):
     x = np.random.uniform(size=[n,p])
     for i in range(p):
@@ -8,13 +9,14 @@ def lhssample(n,p):
     return x
 
 class NEMPC:
-    def __init__(self, cost_fn, num_states, num_inputs, u_min, u_max, 
-            horizon=10, slew_rate=0.15, population_size=500, num_gens=3,
-            num_parents=20):
+    def __init__(self, cost_fn, num_states, num_inputs, u_min, u_max, u_eq,
+            horizon=10, slew_rate=0.15, population_size=500, num_gens=5,
+            num_parents=20, warm_start=False, mode='tournament'):
         self.cost_fn = cost_fn
         self.n, self.m = num_states, num_inputs
         self.u_min, self.u_max = u_min, u_max
         self.u_range = u_max - u_min
+        self.u_eq = u_eq
         self.T = horizon
         # only allow inputs to change by +/- slew_rate % of input range from one
         # time step to the next
@@ -23,17 +25,24 @@ class NEMPC:
         self.costs = np.zeros(self.pop_size)
         self.num_gens = num_gens
         self.num_parents = num_parents
-        # initialize population
-        self.U = self.createRandomUTrajectories(self.pop_size)
-        self.U[0] = np.tile([0.5,0,0,0], self.T) # add equilibrium to population
+        self.warm_start = warm_start
+        self.U = np.empty([self.pop_size, self.T*self.m])
+        self.initialized = False
         self.idxs = np.arange(self.pop_size)
-        # self.mode = 'keep_best'
-        self.mode = 'tournament'
+        self.mode = mode
         # store some data
         self.cost_hist = []
 
     def solve(self, x_des):
-        # set_trace()
+        # create initial population
+        # if using warm_start then the previous population is used to start
+        if not self.initialized or not self.warm_start:
+            self.U = self.createRandomUTrajectories(self.pop_size)
+            self.U[0] = np.tile(self.u_eq, self.T) # add equilibrium to pop
+            if self.warm_start:
+                self.num_gens = 5
+            self.initialized = True
+
         self.cost_fn.x_des = x_des
         for g in range(self.num_gens):
             self.runGeneration()
