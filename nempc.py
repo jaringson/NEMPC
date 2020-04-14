@@ -40,7 +40,7 @@ class NEMPC:
             self.U[0] = np.tile(self.u_eq, self.T) # add equilibrium to pop
             self.U[1:] = self.createRandomUTrajectories(self.pop_size-1)
             if self.warm_start:
-                self.num_gens = 5 # maybe set this to 1?
+                self.num_gens = 1 
             self.initialized = True
 
         # run specified number of generations
