@@ -55,7 +55,12 @@ class NEMPC:
         return best_trajectory
 
     def createRandomUTrajectories(self, num):
-        U_trajectories = np.zeros([num, self.T*self.m])
+        ###### Completely random initialization
+        # U_trajectories = np.tile(self.u_min, self.T) + np.tile(self.u_range,
+        #         self.T)*lhssample(num, self.m*self.T)
+        
+        ###### Slew rate initialization
+        U_trajectories = np.empty([num, self.T*self.m])
         ##### Uniform random initialization
         # uk = np.random.uniform(self.u_min, self.u_max, [num,self.m])
         ##### Latin Hypercube Sampling (LHS) initialization
