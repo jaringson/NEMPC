@@ -12,7 +12,7 @@ class CostFunctor:
         # self.dyn = Dynamics(dt=0.02)
         self.fw = FixedWing()
         self.dt = 0.01
-        self.Q = np.diag([0,0,10, 1,0,0, 500,500,500, 0,0,0])
+        self.Q = np.diag([0,0,100, 1,0,0, 500,500,500, 0,0,0])
         # self.Qf = np.array([10,10,100,4.5,4.5,5,0.8,0.8,1])
         # self.x0 = np.array([0,0,-5.,0,0,0,0,0,0])
         # self.x_des = self.x0.copy()
@@ -59,8 +59,8 @@ class CostFunctor:
         # xk = np.tile(self.x0[:,None], pop_size)
         cost = np.zeros(pop_size)
         u_traj = z.reshape(pop_size,horizon,4)
-        if self.return_states:
-            x_traj = []
+
+        x_traj = np.zeros((self.fw._start.shape[0],horizon))
 
         # self.fw._state = deepcopy(self.fw._start)
 
@@ -69,10 +69,9 @@ class CostFunctor:
         cost = np.zeros(pop_size)
         for k in range(horizon):
 
+            # if self.return_states:
+
             xk = self.fw.forward_simulate_dt(xk, u_traj[:,k].T, self.dt)
-
-
-
 
             one =  np.sum(self.Q[0:6,0:6].dot(np.square(xk[0:6]-self.x_des[0:6])), axis=0)
             two = np.sum(self.Q[6:9,6:9] @ np.square(boxminus(deepcopy(xk[6:10]),deepcopy(self.x_des[6:10]))), axis=0)
@@ -82,6 +81,9 @@ class CostFunctor:
             # print(one, two)
             # set_trace()
             cost += one + two + three
+
+            if self.return_states:
+                x_traj[:,k] = xk.flatten()
 
             # xk = self.dyn.rk4(xk, u_traj[:,k].T)
             # x_err = xk - self.x_des[:,None]
@@ -93,7 +95,6 @@ class CostFunctor:
 
 
         if self.return_states:
-            x_traj = np.array(x_traj).flatten()
             return x_traj, cost
 
         return cost

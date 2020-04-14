@@ -320,16 +320,16 @@ class FixedWing():
             size = delta.shape[1];
 
         Mp = np.array([])
-        if size == 1:
-            Mp = np.array([[-MAV.kTp*(MAV.kOmega*dt)**2],
-                           [0.0],
-                           [0.0]
-                           ])
-        else:
-            Mp = np.array([-MAV.kTp*(MAV.kOmega*dt)**2,
-                           np.zeros(size),
-                           np.zeros(size)
-                           ])
+        # if size == 1:
+        #     Mp = np.array([[-MAV.kTp*(MAV.kOmega*dt)**2],
+        #                    [0.0],
+        #                    [0.0]
+        #                    ])
+        # else:
+        Mp = np.array([-MAV.kTp*(MAV.kOmega*dt)**2,
+                       np.zeros(size),
+                       np.zeros(size)
+                       ])
 
         M = Mp + Ma
 
