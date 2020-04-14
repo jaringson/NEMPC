@@ -37,16 +37,18 @@ class NEMPC:
         # create initial population
         # if using warm_start then the previous population is used to start
         if not self.initialized or not self.warm_start:
-            self.U = self.createRandomUTrajectories(self.pop_size)
             self.U[0] = np.tile(self.u_eq, self.T) # add equilibrium to pop
+            self.U[1:] = self.createRandomUTrajectories(self.pop_size-1)
             if self.warm_start:
-                self.num_gens = 5
+                self.num_gens = 5 # maybe set this to 1?
             self.initialized = True
 
+        # run specified number of generations
         self.cost_fn.x_des = x_des
         for g in range(self.num_gens):
             self.runGeneration()
-            # print(f'Gen {g}: lowest cost = {np.min(self.costs)}')
+
+        # recompute fitness and return the optimum
         self.calcFitness()
         idx = np.argmin(self.costs)
         best_trajectory = self.U[idx]
@@ -54,12 +56,14 @@ class NEMPC:
 
     def createRandomUTrajectories(self, num):
         U_trajectories = np.zeros([num, self.T*self.m])
+        ##### Uniform random initialization
         # uk = np.random.uniform(self.u_min, self.u_max, [num,self.m])
+        ##### Latin Hypercube Sampling (LHS) initialization
         uk = self.u_min + self.u_range*lhssample(num, self.m)
         U_trajectories[:,:self.m] = uk
         for k in range(1,self.T):
             uk = np.random.uniform(uk-self.slew, uk+self.slew)
-            U_trajectories[:,self.m*k:self.m*(k+1)] = self.saturate(uk)
+            U_trajectories[:,self.m*k:self.m*(k+1)] = self.saturate(uk, [num,1])
         return U_trajectories
 
     def runGeneration(self):
@@ -71,37 +75,38 @@ class NEMPC:
     def calcFitness(self):
         self.costs = self.cost_fn(self.U)
         best_idx = np.argmin(self.costs)
-        best_pos_error = np.abs(self.cost_fn.x0 - self.cost_fn.x_des)
-        if best_pos_error[0] < 1e-10:
-            # set_trace()
-            test = self.U[best_idx].reshape(-1,self.m)
-            test[:,2] = 0
-            test = test.flatten()
-            test_cost = self.cost_fn(test)
-            if test_cost < self.costs[best_idx]:
-                self.U[best_idx] = test
-                self.costs[best_idx] = test_cost
-        if best_pos_error[1] < 1e-10:
-            # set_trace()
-            test = self.U[best_idx].reshape(-1,self.m)
-            test[:,1] = 0
-            test = test.flatten()
-            test_cost = self.cost_fn(test)
-            if test_cost < self.costs[best_idx]:
-                self.U[best_idx] = test
-                self.costs[best_idx] = test_cost
-        if best_pos_error[5] < 1e-10:
-            # set_trace()
-            test = self.U[best_idx].reshape(-1,self.m)
-            test[:,3] = 0
-            test = test.flatten()
-            test_cost = self.cost_fn(test)
-            if test_cost < self.costs[best_idx]:
-                self.U[best_idx] = test
-                self.costs[best_idx] = test_cost
+
+        ########### Hack for Quadrotor
+        # best_pos_error = np.abs(self.cost_fn.x0 - self.cost_fn.x_des)
+        # if best_pos_error[0] < 1e-10:
+        #     # set_trace()
+        #     test = self.U[best_idx].reshape(-1,self.m)
+        #     test[:,2] = 0
+        #     test = test.flatten()
+        #     test_cost = self.cost_fn(test)
+        #     if test_cost < self.costs[best_idx]:
+        #         self.U[best_idx] = test
+        #         self.costs[best_idx] = test_cost
+        # if best_pos_error[1] < 1e-10:
+        #     # set_trace()
+        #     test = self.U[best_idx].reshape(-1,self.m)
+        #     test[:,1] = 0
+        #     test = test.flatten()
+        #     test_cost = self.cost_fn(test)
+        #     if test_cost < self.costs[best_idx]:
+        #         self.U[best_idx] = test
+        #         self.costs[best_idx] = test_cost
+        # if best_pos_error[5] < 1e-10:
+        #     # set_trace()
+        #     test = self.U[best_idx].reshape(-1,self.m)
+        #     test[:,3] = 0
+        #     test = test.flatten()
+        #     test_cost = self.cost_fn(test)
+        #     if test_cost < self.costs[best_idx]:
+        #         self.U[best_idx] = test
+        #         self.costs[best_idx] = test_cost
             
         self.cost_hist.append(self.costs[best_idx])
-        # print(self.U[best_idx,:self.m])
 
     def selectParents(self):
         if self.mode == 'keep_best':
@@ -148,8 +153,6 @@ class NEMPC:
                 i,j = np.random.choice(range(0,num), 2, False)
                 self.U[-r] = self.mateParents(mating_pool[i], mating_pool[j])
         elif self.mode == 'tournament':
-            # self.U[:self.pop_size//2] = mating_pool
-            # idxs = np.arange(self.pop_size)
             best_trajectories = self.U[self.costs.argsort()[:self.num_parents]]
             np.random.shuffle(self.idxs)
             for p in range(self.pop_size//2):
@@ -163,7 +166,7 @@ class NEMPC:
                 # linear crossover
                 child1 = (mating_pool[i] + mating_pool[j]) / 2
                 child2 = (2*mating_pool[won] - mating_pool[lost])
-                child2 = self.saturate(child2.reshape(-1,self.m)).flatten()
+                child2 = self.saturate(child2, self.T)
 
                 self.U[2*p] = child1
                 self.U[2*p+1] = child2
@@ -171,13 +174,25 @@ class NEMPC:
             # overwrite first few children with best parents
             self.U[:self.num_parents] = best_trajectories
 
-
     def addMutation(self):
-        idxs = np.where(np.random.rand(self.pop_size) < 0.05)[0]
-        for i in idxs:
-            mutation = self.U[i] + np.random.randn(self.T*self.m)*0.02
-            mutation = self.saturate(mutation.reshape(self.T,self.m))
-            self.U[i] = mutation.flatten()
+        num_p = self.num_parents
+        ####### Apply mutation to each variable individually
+        # r,c = self.U.shape
+        # mask = np.random.rand(r-num_p, c) < 0.05
+        # mutation = np.zeros(mask.shape)
+        # mutation[mask] += np.random.randn(*mutation[mask].shape)*0.02
+        # self.U[num_p:] += mutation
+        # self.U = self.saturate(self.U, [self.pop_size,self.T])
+
+        ####### Apply mutation to whole member of population
+        mask = np.random.rand(self.pop_size-num_p) < 0.05
+        mutation = np.random.randn(*self.U[num_p:][mask].shape)*0.02
+        self.U[num_p:][mask] += mutation
+        self.U = self.saturate(self.U, [self.pop_size,self.T])
+        # for i in idxs:
+        #     mutation = self.U[i] + np.random.randn(self.T*self.m)*0.02
+        #     mutation = self.saturate(mutation.reshape(self.T,self.m))
+        #     self.U[i] = mutation.flatten()
 
     def mateParents(self, parent1, parent2):
         child = np.empty(self.T*self.m)
@@ -189,25 +204,12 @@ class NEMPC:
                 child[gene] = parent2[gene]
         return child 
 
-    def saturate(self, u):
-        l = len(u)
-        mask = u > self.u_max
-        u[mask] = np.tile(self.u_max, [l,1])[mask]
-        mask = u < self.u_min
-        u[mask] = np.tile(self.u_min, [l,1])[mask]
+    def saturate(self, u, tile_shape):
+        lim = np.tile(self.u_max, tile_shape)
+        mask = u > lim
+        u[mask] = lim[mask]
+        lim = np.tile(self.u_min, tile_shape)
+        mask = u < lim
+        u[mask] = lim[mask]
         return u
-
-    # def keepTopTrajectories(self):
-    #     # keep a few of the best input trajectories
-    #     best_trajectories = self.costs.argsort()[:self.num_parents]
-    #     survivors = self.U[best_trajectories]
-    #     # introduce random strangers to mating pool to prevent stagnation
-    #     strangers = self.createRandomUTrajectories(self.num_parents)
-    #     parents = np.block([[survivors],[strangers]])
-    #     return parents
-
-    # def tournament(self):
-    #     idxs = np.arange(self.pop_size)
-    #     np.random.shuffle(idxs)
-    #     idxs = idxs.reshape(pop_size, 2)
 
