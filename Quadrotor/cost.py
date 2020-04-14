@@ -4,8 +4,8 @@ from dynamics import Dynamics
 class CostFunctor:
     def __init__(self, use_penalty=False, return_states=False):
         self.dyn = Dynamics(dt=0.02)
-        self.Q = np.array([10,10,100,2.5,2.5,2,9.8,9.8,10])
-        self.Qf = np.array([10,10,100,4.5,4.5,5,0.8,0.8,1])
+        self.Q = np.array([10,10,100,20.5,20.5,20,9.8,9.8,10])
+        self.Qf = self.Q 
         self.x0 = np.array([0,0,-5.,0,0,0,0,0,0])
         self.x_des = self.x0.copy()
         self.use_penalty = use_penalty

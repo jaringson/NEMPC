@@ -39,8 +39,8 @@ class Dynamics():
         xdot[3] = wx + Sp*Tt*wy + Cp*Tt*wz
         xdot[4] = Cp*wy-Sp*wz
         xdot[5] = (Sp*wy+Cp*wz) / Ct
-        xdot[6] = (wz*vy-wy*vz)*0 - self.g*St - self.cd*vx
-        xdot[7] = (wx*vz-wz*vx)*0 + self.g*Ct*Sp - self.cd*vy
-        xdot[8] = (wy*vx-wx*vy)*0 + self.g*Ct*Cp - self.g*s/self.se
+        xdot[6] = (wz*vy-wy*vz)*1 - self.g*St - self.cd*vx
+        xdot[7] = (wx*vz-wz*vx)*1 + self.g*Ct*Sp - self.cd*vy
+        xdot[8] = (wy*vx-wx*vy)*1 + self.g*Ct*Cp - self.g*s/self.se
 
         return xdot
