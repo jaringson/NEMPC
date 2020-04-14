@@ -12,7 +12,7 @@ class CostFunctor:
         # self.dyn = Dynamics(dt=0.02)
         self.fw = FixedWing()
         self.dt = 0.01
-        self.Q = 0.1*np.diag([0,0,100, 1,0,0, 50,50,50, 0,0,0])
+        self.Q = np.diag([0,0,10, 1,0,0, 500,500,500, 0,0,0])
         # self.Qf = np.array([10,10,100,4.5,4.5,5,0.8,0.8,1])
         # self.x0 = np.array([0,0,-5.,0,0,0,0,0,0])
         # self.x_des = self.x0.copy()
@@ -28,7 +28,7 @@ class CostFunctor:
         e2 = e.item(2)
         e3 = e.item(3)
 
-        self.xgoal = np.array([[0],  # (0)
+        self.x_des = np.array([[0],  # (0)
                            [0],   # (1)
                            [-100],   # (2)
                            [15],    # (3)
@@ -44,7 +44,7 @@ class CostFunctor:
 
         # self.initialized = False
         self.return_states = return_states
-        w_max = np.pi / 2
+        w_max = np.pi / 4
         self.u_max = np.array([w_max, w_max, 1, w_max])
         self.u_min = np.array([-w_max,-w_max, 0, -w_max])
         self.mu = 10.
@@ -66,21 +66,22 @@ class CostFunctor:
 
         xk = np.tile(self.fw._start, pop_size)
 
+        cost = np.zeros(pop_size)
         for k in range(horizon):
 
             xk = self.fw.forward_simulate_dt(xk, u_traj[:,k].T, self.dt)
 
-            # set_trace()
-
-            cost = np.zeros(pop_size)
 
 
-            one =  np.sum(self.Q[0:6,0:6].dot(np.square(xk[0:6]-self.xgoal[0:6])), axis=0)
-            two = np.sum(self.Q[6:9,6:9] @ np.square(boxminus(deepcopy(xk[6:10]),deepcopy(self.xgoal[6:10]))), axis=0)
-            three = np.sum(self.Q[9:,9:].dot(np.square(xk[10:]-self.xgoal[10:])), axis=0)
+
+            one =  np.sum(self.Q[0:6,0:6].dot(np.square(xk[0:6]-self.x_des[0:6])), axis=0)
+            two = np.sum(self.Q[6:9,6:9] @ np.square(boxminus(deepcopy(xk[6:10]),deepcopy(self.x_des[6:10]))), axis=0)
+            three = np.sum(self.Q[9:,9:].dot(np.square(xk[10:]-self.x_des[10:])), axis=0)
 
             # for i in range(u.shape[0]):
-            cost = one + two + three
+            # print(one, two)
+            # set_trace()
+            cost += one + two + three
 
             # xk = self.dyn.rk4(xk, u_traj[:,k].T)
             # x_err = xk - self.x_des[:,None]
@@ -94,5 +95,5 @@ class CostFunctor:
         if self.return_states:
             x_traj = np.array(x_traj).flatten()
             return x_traj, cost
-        
+
         return cost
