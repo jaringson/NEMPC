@@ -2,6 +2,8 @@ import numpy as np
 import time
 import matplotlib.pyplot as plt
 
+from IPython.core.debugger import set_trace
+
 class NonlinearEMPC():
 
     def __init__(self,
@@ -69,14 +71,15 @@ class NonlinearEMPC():
                 mate2 = np.random.choice(range(0,self.numParents))
 
             self.U[:,:,i] = self.mate_parents(parents[:,:,mate1],parents[:,:,mate2])
-            self.U[:,:,i] = self.mutate_child(self.U[:,:,i],mutation_noise=self.uRange[0]/3.0)
+            # self.U[:,:,i] = self.mutate_child(self.U[:,:,i],mutation_noise=self.uRange[0]/1000.0)
             i += 1
 
         return self.U
 
     def get_us_from_U(self,U,i,horizon,numKnotPoints):
         knot = int(i/self.segmentLength)
-        ui = U[knot,:,:]*(1.0-float(i)/self.segmentLength) + U[knot+1,:,:]*(float(i)/self.segmentLength)
+        # ui = U[knot,:,:]*(1.0-float(i)/self.segmentLength) + U[knot+1,:,:]*(float(i)/self.segmentLength)
+        ui = U[knot,:,:]
         for i in range(0,self.m):
             ui[i,:] = ui[i,:].clip(self.umin[i],self.umax[i])
 
@@ -88,6 +91,7 @@ class NonlinearEMPC():
 
         for i in range(0,self.horizon-1):
             ui = self.get_us_from_U(U,i,self.horizon,self.numKnotPoints)
+            set_trace()
             self.X[i+1,:,:] = self.model(self.X[i,:,:],ui,self.dt)
             self.costs += self.cost_function(self.X[i,:,:],ui,xgoal,ugoal)
 
@@ -103,14 +107,18 @@ class NonlinearEMPC():
         return self.U_parents
 
     def get_next_u_from_parents(self,U_parents):
-        next_u = U_parents[0,:,0]*(1.0-1.0/self.segmentLength)+U_parents[1,:,0]*(1.0/self.segmentLength)
-        return next_u
+        return U_parents[0,:,0]
+        # next_u = U_parents[0,:,0]*(1.0-1.0/self.segmentLength)+U_parents[1,:,0]*(1.0/self.segmentLength)
+        # return next_u
 
 
 
     def solve_for_next_u(self,x0,xgoal,ulast,ugoal):
         if self.warmStart == False:
+            # self.U = np.zeros((self.numParents, self.m, self.numSims))
             self.U = self.get_random_u_trajectories(self.numSims)
+            # set_trace()
+            # print(self.U)
             self.warmStart = True
         else:
             self.U = self.mate_and_mutate_parents(self.U_parents,x0,xgoal,ulast)
@@ -119,10 +127,20 @@ class NonlinearEMPC():
             # for i in range(0,self.numSims):
             #     self.U[0,:,i] = ulast
 
+        for i in range(100):
+            print('Generation: ', i)
+            self.costs = self.get_costs_from_trajectories(x0,xgoal,ugoal,self.U)
+            self.U_parents = self.select_parents(self.U,self.costs)
+            self.U = self.mate_and_mutate_parents(self.U_parents,x0,xgoal,ulast)
+
         self.costs = self.get_costs_from_trajectories(x0,xgoal,ugoal,self.U)
         self.U_parents = self.select_parents(self.U,self.costs)
         next_u = self.get_next_u_from_parents(self.U_parents)
 
+        print(repr(self.U_parents[:,:,0].flatten()))
+        # print(self.U_parents[:,:,0])
+        # print(next_u)
+        # set_trace()
         return next_u
 
 
@@ -155,6 +173,7 @@ if __name__=='__main__':
         else:
             Qx = np.abs(Q.dot(x-xgoal))
             Ru = np.abs(R.dot(u-ugoal))
+            # set_trace()
             for i in range(u.shape[0]):
                 cost[i,:] = Ru[i] + Qx[i+u.shape[0]]
         return cost

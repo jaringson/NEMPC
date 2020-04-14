@@ -1,23 +1,25 @@
-from Model import Model
+# from Model import Model
 import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d.axes3d as p3
 import numpy as np
 from copy import deepcopy
-# import aerosonde_parameters as MAV
-import vaporlite_parameters as MAV
+import aerosonde_parameters as MAV
+# import vaporlite_parameters as MAV
 
 from tools import normalize
 from tools import Quaternion2Euler
 import pdb
 import warnings
 
-class FixedWing(Model):
+from IPython.core.debugger import set_trace
+
+class FixedWing():
 
     def __init__(self):
         self.numStates = 13
         self.numInputs = 4
 
-        self._state = np.array([[MAV.pn0],  # (0)
+        self._start = np.array([[MAV.pn0],  # (0)
                                [MAV.pe0],   # (1)
                                [MAV.pd0],   # (2)
                                [MAV.u0],    # (3)
@@ -30,6 +32,8 @@ class FixedWing(Model):
                                [MAV.p0],    # (10)
                                [MAV.q0],    # (11)
                                [MAV.r0]])   # (12)
+
+        self._state = deepcopy(self._start)
 
         self.state_max = np.array([[5],  # (0)
                                [5],   # (1)
@@ -93,8 +97,8 @@ class FixedWing(Model):
         # xdot[1,:] = x[0,:]
         # x = x + xdot*dt
 
-        self._state[self._state<-1e100]=0
-        self._state[self._state>1e100]=0
+        # self._state[self._state<-1e100]=0
+        # self._state[self._state>1e100]=0
         k1 = self._derivatives(self._state, forces_moments).reshape((-1,13)).T
         k1[k1<-1e100]=0
         k1[k1>1e100]=0
@@ -114,30 +118,11 @@ class FixedWing(Model):
         self._state[6:10] = normalize(self._state[6:10])
         x = deepcopy(self._state)
 
-        # print('u',u)
-        # print('x',x)
-        # print('xdot',xdot)
 
-        # if wrapAngle==True:
-        #     x[1,:] = (x[1,:] + np.pi) % (2*np.pi) - np.pi
 
         return x
 
-    # def calc_discrete_A_B_w(self,x,u,dt=.01):
-    #     x = deepcopy(x)
-    #     u = deepcopy(u)
-    #     x = x.reshape([self.numStates,-1])
-    #     A = np.matrix([[-self.b/self.I, 0],
-    #                    [1.0, 0]])
-    #     B = np.matrix([[1.0/self.I],
-    #                    [0.0]])
-    #     w = np.matrix([self.m*self.g*np.sin(x[1,:])/self.I,
-    #                    [0.0]])
-    #
-    #     [Ad,Bd] = self.discretize_A_and_B(A,B,dt)
-    #     wd = w*dt
-    #
-    #     return Ad,Bd,wd
+
 
 
     def visualize(self,x,ax,color='red'):
@@ -317,15 +302,8 @@ class FixedWing(Model):
 
         Fp = 0.5*MAV.rho*MAV.S_prop*MAV.C_prop*((MAV.k_motor*dt)**2-self._Va**2)
 
-        # print("FP:", Fp)
 
         fx = F[0] + Fp
-            # + 0.5*MAV.rho*self._Va**2*MAV.S_wing*(\
-            #     +cxa(self._alpha)\
-            #     + cxq(self._alpha)*c*q\
-            #     + cxde(self._alpha)*de
-            #     )
-
         fy = F[1]
         fz = F[2]
 
