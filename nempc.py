@@ -56,19 +56,19 @@ class NEMPC:
 
     def createRandomUTrajectories(self, num):
         ###### Completely random initialization
-        # U_trajectories = np.tile(self.u_min, self.T) + np.tile(self.u_range,
-        #         self.T)*lhssample(num, self.m*self.T)
+        U_trajectories = np.tile(self.u_min, self.T) + np.tile(self.u_range,
+                self.T)*lhssample(num, self.m*self.T)
         
         ###### Slew rate initialization
-        U_trajectories = np.empty([num, self.T*self.m])
-        ##### Uniform random initialization
-        # uk = np.random.uniform(self.u_min, self.u_max, [num,self.m])
-        ##### Latin Hypercube Sampling (LHS) initialization
-        uk = self.u_min + self.u_range*lhssample(num, self.m)
-        U_trajectories[:,:self.m] = uk
-        for k in range(1,self.T):
-            uk = np.random.uniform(uk-self.slew, uk+self.slew)
-            U_trajectories[:,self.m*k:self.m*(k+1)] = self.saturate(uk, [num,1])
+        # U_trajectories = np.empty([num, self.T*self.m])
+        # ## Uniform random initialization
+        # # uk = np.random.uniform(self.u_min, self.u_max, [num,self.m])
+        # ## Latin Hypercube Sampling (LHS) initialization
+        # uk = self.u_min + self.u_range*lhssample(num, self.m)
+        # U_trajectories[:,:self.m] = uk
+        # for k in range(1,self.T):
+        #     uk = np.random.uniform(uk-self.slew, uk+self.slew)
+        #     U_trajectories[:,self.m*k:self.m*(k+1)] = self.saturate(uk, [num,1])
         return U_trajectories
 
     def runGeneration(self):
