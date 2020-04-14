@@ -8,17 +8,18 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 cost_fn = CostFunctor(use_penalty=False)
+cost_fn.Q = np.array([10,10,100,2.5,2.5,2,1,1,1])
 u_eq = np.array([0.5,0,0,0])
 ctrl = NEMPC(cost_fn, 9, 4, cost_fn.u_min, cost_fn.u_max, u_eq, horizon=10,
         population_size=500, num_parents=10, num_gens=200, mode='tournament',
-        warm_start=False)
+        warm_start=True)
 dyn = Dynamics()
 
 t = 0.0
 tf = 10.0
 ts = 0.02
 x = np.array([0,0,-5.0,0,0,0,0,0,0])
-x_des = np.array([0,0,-6.0,0,0,0,0,0,0])
+x_des = np.array([0,1,-6.0,0,0,0,0,0,0])
 
 state_hist = []
 input_hist = []
@@ -29,8 +30,8 @@ while t < tf:
     time_hist.append(t)
     state_hist.append(x)
 
-    ctrl.x0 = x
-    ctrl.x_des = x_des
+    cost_fn.x0 = x
+    cost_fn.x_des = x_des
     u_traj = ctrl.solve(x_des)
     u_star = u_traj[:4]
 
