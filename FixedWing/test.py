@@ -14,10 +14,10 @@ from tools import boxminus
 np.set_printoptions(precision=4, suppress=True)
 
 cost_fn = CostFunctor(use_penalty=False)
-u_eq = np.array([0,0,0.5,0])
-phi0 = 0.0  # roll angle
-theta0 =  0.0  # pitch angle
-psi0 = 0.0  # yaw angle
+u_eq = np.array([0.0, -1.5, 1.0, 0.0])
+phi0 = 0.0 #np.pi/4  # roll angle
+theta0 =  np.radians(5) #0.0  # pitch angle
+psi0 = 0.0 #np.pi/2  # yaw angle
 
 e = Euler2Quaternion(phi0, theta0, psi0, 1)
 e0 = e.item(0)
@@ -28,7 +28,7 @@ e3 = e.item(3)
 x_des = np.array([[0],  # (0)
                    [0],   # (1)
                    [-100],   # (2)
-                   [15],    # (3)
+                   [25],    # (3)
                    [0],    # (4)
                    [0],    # (5)
                    [e0],    # (6)
@@ -40,7 +40,9 @@ x_des = np.array([[0],  # (0)
                    [0]])   # (12)
 
 pop_sizes = [5000,1000,500,300,100]
-gen_sizes = [500, 300, 200, 100]
+pop_sizes = [100]
+# gen_sizes = [500, 300, 200, 100]
+gen_sizes = [100]
 
 horizon = 10
 
@@ -91,6 +93,6 @@ for gs in gen_sizes:
 
 
     plt.pause(1.0)
-    set_trace()
+    # set_trace()
 
 plt.show()

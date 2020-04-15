@@ -40,7 +40,7 @@ class NEMPC:
             self.U[0] = np.tile(self.u_eq, self.T) # add equilibrium to pop
             self.U[1:] = self.createRandomUTrajectories(self.pop_size-1)
             if self.warm_start:
-                self.num_gens = 1 
+                self.num_gens = 1
             self.initialized = True
 
         # run specified number of generations
@@ -58,7 +58,7 @@ class NEMPC:
         ###### Completely random initialization
         U_trajectories = np.tile(self.u_min, self.T) + np.tile(self.u_range,
                 self.T)*lhssample(num, self.m*self.T)
-        
+
         ###### Slew rate initialization
         # U_trajectories = np.empty([num, self.T*self.m])
         # ## Uniform random initialization
@@ -110,7 +110,7 @@ class NEMPC:
         #     if test_cost < self.costs[best_idx]:
         #         self.U[best_idx] = test
         #         self.costs[best_idx] = test_cost
-            
+
         self.cost_hist.append(self.costs[best_idx])
 
     def selectParents(self):
@@ -151,7 +151,7 @@ class NEMPC:
                     i,j = idxs[2*child:2*(child+1)]
                     batch[child] = self.mateParents(mating_pool[i], mating_pool[j])
                 self.U[self.num_parents*r:self.num_parents*(r+1)] = batch
-            
+
             # in case num doesn't divide evenly into pop_size
             remainder = (self.pop_size - num) % self.num_parents
             for r in range(1, remainder+1):
@@ -177,7 +177,10 @@ class NEMPC:
                 self.U[2*p+1] = child2
 
             # overwrite first few children with best parents
+            # set_trace()
             self.U[:self.num_parents] = best_trajectories
+            # strangers = self.createRandomUTrajectories(1)
+            # self.U[self.num_parents:self.num_parents+1] = strangers
 
     def addMutation(self):
         num_p = self.num_parents
@@ -191,7 +194,7 @@ class NEMPC:
 
         ####### Apply mutation to whole member of population
         mask = np.random.rand(self.pop_size-num_p) < 0.05
-        mutation = np.random.randn(*self.U[num_p:][mask].shape)*0.02
+        mutation = np.random.randn(*self.U[num_p:][mask].shape)*0.2
         self.U[num_p:][mask] += mutation
         self.U = self.saturate(self.U, [self.pop_size,self.T])
         # for i in idxs:
@@ -207,7 +210,7 @@ class NEMPC:
                 child[gene] = parent1[gene]
             else:
                 child[gene] = parent2[gene]
-        return child 
+        return child
 
     def saturate(self, u, tile_shape):
         lim = np.tile(self.u_max, tile_shape)
@@ -217,4 +220,3 @@ class NEMPC:
         mask = u < lim
         u[mask] = lim[mask]
         return u
-

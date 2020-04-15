@@ -8,13 +8,13 @@ from tools import Euler2Quaternion
 ######################################################################################
 #   Initial conditions for MAV
 pn0 = 0.  # initial north position
-pe0 = 0.  # initial east position
+pe0 = 1.  # initial east position
 pd0 = -100.0  # initial down position
-u0 = 15.  # initial velocity along body x-axis
+u0 = 25.  # initial velocity along body x-axis
 v0 = 0.  # initial velocity along body y-axis
 w0 = 0.  # initial velocity along body z-axis
 phi0 = 0.  # initial roll angle
-theta0 =  0.  # initial pitch angle
+theta0 =  np.radians(2.5) #0.  # initial pitch angle
 psi0 = 0.0  # initial yaw angle
 p0 = 0  # initial roll rate
 q0 = 0  # initial pitch rate
